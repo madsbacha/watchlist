@@ -146,7 +146,19 @@ function refresh() {
 }
 
 (function() {
+  if (document.cookie === "") {
+    document.cookie = JSON.stringify({ darktheme: false })
+  }
+  const cookieData = JSON.parse(document.cookie)
+  if (!cookieData.darktheme) {
+    document.documentElement.classList.remove("darktheme")
+  }
   const addBtn = document.getElementById("add-new-title")
   addBtn.addEventListener('click', handleAdd)
+  document.getElementById("theme").addEventListener('click', () => {
+    const state = ! document.documentElement.classList.contains("darktheme")
+    document.cookie = JSON.stringify({ darktheme: state })
+    document.documentElement.classList.toggle("darktheme")
+  })
   refresh()
 })()
