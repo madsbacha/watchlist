@@ -11,3 +11,16 @@
   margin-top: 5px;
   margin-bottom: 5px;
 }
+
+.number-container {
+  display: inline;
+}
+
+.number-container label {
+  margin-left: 12px;
+  margin-right: 12px;
+}
+
+.number-label {
+  font-weight: bold;
+}

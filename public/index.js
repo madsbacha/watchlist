@@ -1,5 +1,9 @@
-function getWatch() {
-  return fetch('/api/watchlist')
+function getWatch(finished = undefined) {
+  let url = '/api/watchlist'
+  if (finished !== undefined) {
+    url += '?finished=' + (finished ? 'true' : 'false')
+  }
+  return fetch(url)
     .then(response => response.json());
 }
 
@@ -26,17 +30,29 @@ function clearElement(el) {
   }
 }
 
-function generateNumberColEl(text, number) {
+function generateNumberColEl(text, number, onChange) {
   const container = document.createElement("p")
   container.classList.add("item-number")
 
+  const addBtn = document.createElement("button")
+  addBtn.innerText = "+"
+  addBtn.addEventListener('click', () => onChange(1))
+  const removeBtn = document.createElement("button")
+  removeBtn.innerText = "-"
+  removeBtn.addEventListener('click', () => onChange(-1))
+
+
   const textEl = document.createElement("label")
+  textEl.classList.add("number-label")
   textEl.innerText = text
   container.append(textEl)
 
+  const numberContainer = document.createElement("div")
+  numberContainer.classList.add("number-container")
   const numberEl = document.createElement("label")
   numberEl.innerText = number
-  container.append(numberEl)
+  numberContainer.append(removeBtn, numberEl, addBtn)
+  container.append(numberContainer)
   
   return container
 }
@@ -49,9 +65,13 @@ function addItemToList(el, payload) {
   title.innerText = payload.title
   itemContainer.append(title)
 
-  const seasonEl = generateNumberColEl("season: ", payload.season)
+  const seasonEl = generateNumberColEl("season ", payload.season, (change) => {
+    setNumbers(payload.id, payload.season + change, 1).then(() => refresh())
+  })
   itemContainer.append(seasonEl)
-  const episodeEl = generateNumberColEl("episode: ", payload.episode)
+  const episodeEl = generateNumberColEl("episode ", payload.episode, (change) => {
+    setNumbers(payload.id, payload.season, payload.episode + change).then(() => refresh())
+  })
   itemContainer.append(episodeEl)
 
   const finishedBtn = document.createElement("button")
@@ -75,6 +95,14 @@ function handleWatchlist(list) {
   }
 }
 
+function handleWatchlistFinished(list) {
+  const listEl = document.getElementById("watchlist-finished")
+  clearElement(listEl)
+  for (const item of list) {
+    addItemToList(listEl, item)
+  }
+}
+
 function setNumbers(id, season, episode) {
   return fetch(`/api/watchlist/${id}`, {
     method: 'PUT',
@@ -82,7 +110,7 @@ function setNumbers(id, season, episode) {
     headers: {
         'Content-Type': 'application/json'
     }
-  })
+  }).then(response => response.json())
 }
 
 function setFinished(id, title, finished) {
@@ -95,13 +123,30 @@ function setFinished(id, title, finished) {
     headers: {
         'Content-Type': 'application/json'
     }
+  }).then(response => response.json())
+}
+
+function handleAdd(event) {
+  const titleEl = document.getElementById("new-title")
+  const title = titleEl.value
+  if (title.trim() === "") {
+    return;
+  }
+  titleEl.setAttribute("disabled", 1)
+  addEntry(title, 1, 0, false).then(() => {
+    titleEl.value = ""
+    titleEl.removeAttribute("disabled")
+    refresh()
   })
 }
 
 function refresh() {
-  getWatch().then(handleWatchlist);
+  getWatch(false).then(handleWatchlist);
+  getWatch(true).then(handleWatchlistFinished);
 }
 
 (function() {
+  const addBtn = document.getElementById("add-new-title")
+  addBtn.addEventListener('click', handleAdd)
   refresh()
 })()
